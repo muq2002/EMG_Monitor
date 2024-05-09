@@ -3,12 +3,12 @@ from PyQt5.QtCore import QTimer, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from utils import get_ports, get_baudrates
 from serial_connection import SerialConnection
 from exporter import Exporter
 from patient_info_dialog import PatientInfoDialog
 from csv_reader import read_csv_and_plot
 from choose_port_baudrate import PortBaudrateDialog
+from utils import apply_dark_mode_to_plot, apply_dark_mode_to_pyqt
 
 class SerialPlotter(QMainWindow):
     def __init__(self):
@@ -27,6 +27,10 @@ class SerialPlotter(QMainWindow):
         self.figure, self.ax = plt.subplots()
         self.canvas = FigureCanvas(self.figure)
         main_layout.addWidget(self.canvas)
+        
+        apply_dark_mode_to_plot(self.figure, self.ax)
+
+        apply_dark_mode_to_pyqt(self)
 
         # Create layout for RMS and fatigue labels
         labels_layout = QHBoxLayout()
