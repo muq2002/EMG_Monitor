@@ -26,7 +26,7 @@ class SerialConnection:
     def start_reading(self, update_data):
         def read_serial():
             while self.is_connected:
-                data = self.serial.readline().decode().strip()
+                data = self.serial.readline().decode('utf-8').strip()
                 if data:
                     try:
                         json_data = json.loads(data)
@@ -49,8 +49,8 @@ class SerialConnection:
 
     def update_plot(self, ax1):
 
-        self.data["emg"] = self.data["emg"][-50:]
-        self.filtered_data["emg"] = self.filtered_data["emg"][-50:]
+        self.data["emg"] = self.data["emg"][-200:]
+        self.filtered_data["emg"] = self.filtered_data["emg"][-200:]
 
         ax1.clear()
         ax1.plot(self.filtered_data["emg"], color='red', linestyle='-', linewidth=2)

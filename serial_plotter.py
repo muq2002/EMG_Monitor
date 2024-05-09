@@ -9,6 +9,7 @@ from patient_info_dialog import PatientInfoDialog
 from csv_reader import read_csv_and_plot
 from choose_port_baudrate import PortBaudrateDialog
 from utils import apply_dark_mode_to_plot, apply_dark_mode_to_pyqt
+from models_load import calculate_rms, determine_fatigue, calculate_zero_crossing  # Import functions
 
 class SerialPlotter(QMainWindow):
     def __init__(self):
@@ -29,19 +30,23 @@ class SerialPlotter(QMainWindow):
         main_layout.addWidget(self.canvas)
         
         apply_dark_mode_to_plot(self.figure, self.ax)
-
         apply_dark_mode_to_pyqt(self)
 
-        # Create layout for RMS and fatigue labels
+        # Create layout for RMS, fatigue, and zero-crossing labels
         labels_layout = QHBoxLayout()
 
-        # Create the RMS label
+        # RMS label
         self.rms_label = QLabel("RMS: 0")
         self.rms_label.setStyleSheet("font-size: 40px; color: blue;") 
         labels_layout.addWidget(self.rms_label)
         labels_layout.setAlignment(self.rms_label, Qt.AlignCenter)
+        # Zero-crossing label
+        self.zero_crossing_label = QLabel("Zero-Crossing: 0")
+        self.zero_crossing_label.setStyleSheet("font-size: 40px; color: green;")
+        labels_layout.addWidget(self.zero_crossing_label)
+        labels_layout.setAlignment(self.zero_crossing_label, Qt.AlignCenter)
 
-        # Create the fatigue label
+        # Fatigue label
         self.fatigue_label = QLabel("Fatigue: Normal")
         self.fatigue_label.setStyleSheet("font-size: 40px; color: red;")
         labels_layout.addWidget(self.fatigue_label)
@@ -93,7 +98,7 @@ class SerialPlotter(QMainWindow):
         else:
             # Connect to the serial port
             dialog = PortBaudrateDialog(self)
-            if dialog.exec_():  # Show the dialog and check if the user confirmed their selection
+            if dialog.exec_():
                 port, baudrate = dialog.get_selected_port_and_baudrate()
                 try:
                     self.serial_connection.connect(port, baudrate)
@@ -107,57 +112,35 @@ class SerialPlotter(QMainWindow):
                     QMessageBox.warning(self, "Error", f"An error occurred while connecting: {e}")
 
     def update_data(self, values):
-        # Append data and update labels
         self.serial_connection.append_data(values)
 
-        # Calculate RMS and fatigue status (adjust calculations as needed)
-        emg_values = values.get('emg_values', [])
-        rms_value = self.calculate_rms(emg_values)
-        fatigue_status = self.determine_fatigue(rms_value)
 
-        # Update RMS label text
+        rms_value = calculate_rms(self.serial_connection.buffer_data['emg'])
+        zero_crossing_count = calculate_zero_crossing(self.serial_connection.buffer_data['emg'])
+
+        fatigue_status = "Normal" # determine_fatigue(rms_value, zero_crossing_count)
+
+
+        # Update labels
         self.rms_label.setText(f"RMS: {rms_value:.2f}")
-
-        # Update fatigue label text
+        self.zero_crossing_label.setText(f"Zero-Crossing: {zero_crossing_count}")
         self.fatigue_label.setText(f"Fatigue: {fatigue_status}")
-
-    def calculate_rms(self, values):
-        # Calculate the RMS value from EMG values
-        import numpy as np
-        if not values:
-            return 0
-        squared_values = np.square(values)
-        mean_squared = np.mean(squared_values)
-        rms = np.sqrt(mean_squared)
-        return rms
-
-    def determine_fatigue(self, rms_value):
-        # Define RMS thresholds for fatigue status (adjust as needed)
-        if rms_value < 10:
-            return "Normal"
-        elif rms_value < 20:
-            return "Moderate"
-        else:
-            return "High"
 
     def update_plot(self, frame):
         self.ax.clear()
-
         # Update the plot with EMG data
         self.serial_connection.update_plot(self.ax)
-       
-
         # Set title and labels for the plot
         self.ax.set_title("EMG Data")
         self.ax.set_xlabel("Time")
         self.ax.set_ylabel("Amplitude")
-
+        self.ax.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
         # Redraw the canvas to display the updated plot
         self.canvas.draw()
 
     def show_port_baudrate_dialog(self):
         dialog = PortBaudrateDialog(self)
-        if dialog.exec_():  # Show the dialog and check if the user confirmed their selection
+        if dialog.exec_():
             port, baudrate = dialog.get_selected_port_and_baudrate()
             try:
                 self.serial_connection.connect(port, baudrate)
