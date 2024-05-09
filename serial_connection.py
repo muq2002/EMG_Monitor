@@ -10,9 +10,10 @@ class SerialConnection:
         self.serial = None
         self.is_connected = False
 
-        self.data = {"pressure": [], "flowrate": []}
-        self.filtered_data = {"pressure": [], "flowrate": []} 
-        self.buffer_data = {"pressure": [], "flowrate": [], "volume": []}
+        # Changed data structure to handle only EMG data
+        self.data = {"emg": []}
+        self.filtered_data = {"emg": []}
+        self.buffer_data = {"emg": []}
 
     def connect(self, port, baudrate):
         if self.serial is None or not self.serial.is_open:
@@ -39,45 +40,23 @@ class SerialConnection:
         self.thread.start()
 
     def append_data(self, json_data):
-        self.data["pressure"].append(json_data.get("pressure", 0))
-        self.data["flowrate"].append(json_data.get("flowrate", 0))
+        self.data["emg"].append(json_data.get("emg", 0))
+        self.buffer_data["emg"].append(json_data.get("emg", 0))
 
-        self.buffer_data["pressure"].append(json_data.get("pressure", 0))
-        self.buffer_data["flowrate"].append(json_data.get("flowrate", 0))
-        
     def filter_data(self):
         window_size = 5
-        self.filtered_data["pressure"] = moving_average_filter(self.data["pressure"], window_size)
-        self.filtered_data["flowrate"] = moving_average_filter(self.data["flowrate"], window_size)
+        self.filtered_data["emg"] = moving_average_filter(self.data["emg"], window_size)
 
-    def update_plot(self, ax1, ax2, ax3, ax4):
+    def update_plot(self, ax1):
 
-        self.data["pressure"] = self.data["pressure"][-50:]
-        self.data["flowrate"] = self.data["flowrate"][-50:]
-
-        self.filtered_data["pressure"] = self.filtered_data["pressure"][-50:]
-        self.filtered_data["flowrate"] = self.filtered_data["flowrate"][-50:]
+        self.data["emg"] = self.data["emg"][-50:]
+        self.filtered_data["emg"] = self.filtered_data["emg"][-50:]
 
         ax1.clear()
-        ax1.plot(self.filtered_data["pressure"])
-
-        ax2.clear()
-        ax2.plot(self.filtered_data["flowrate"])
-
-        volume = integrate_discrete_signal(self.filtered_data["flowrate"])
-
-        # if len(volume) > 0:
-        #     self.buffer_data["volume"].append(0)
-        # else:
-        #     self.buffer_data["volume"].append(volume[-1:])
- 
-        ax3.clear()
-        ax3.plot(volume)
-
-        ax4.clear()
-        ax4.plot(volume, self.filtered_data["pressure"])
+        ax1.plot(self.filtered_data["emg"], color='red', linestyle='-', linewidth=2)
 
     def get_data(self):
+        # Return buffer data containing EMG data
         return self.buffer_data
     
     def close_connection(self):

@@ -12,7 +12,7 @@ class Exporter:
             return
         
         filename = folder_path + "/data.csv"
-        if not all(key in data for key in ['pressure', 'flowrate']):
+        if not all(key in data for key in ['emg']):
             QMessageBox.warning(self.window, "Data Error", "Data format is incorrect.")
             return
 
@@ -20,9 +20,9 @@ class Exporter:
         with open(filename, "w", newline="") as csvfile:
             csv_writer = csv.writer(csvfile)
 
-            csv_writer.writerow(["Pressure", "Flowrate"])
-            min_length = min(len(data["pressure"]), len(data["flowrate"]))
+            csv_writer.writerow(["emg"])
+            min_length = min(len(data["emg"]), len(data["emg"]))
             for i in range(min_length):
-                csv_writer.writerow([data["pressure"][i], data["flowrate"][i]])
+                csv_writer.writerow([data["emg"][i], data["emg"][i]])
 
         QMessageBox.information(self.window, "Export Complete", f"Data has been exported to {filename}.")
